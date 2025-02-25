@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <graph.h>
-#include <instance.h>
-#include <state.h>
-#include <minimum_cut.h>
 #include <limits.h>
+#include "graph.h"
+#include "instance.h"
+#include "state.h"
+#include "minimum_cut.h"
 
 int computeLowerBound(int* partition, int n, int** graph) {
     int lowerBound = 0;
@@ -31,59 +31,61 @@ void bb_dfs(int idx, State state, State* bestState, Instance* instance, int* rec
     int n = instance->n;
     int** graph = instance->graph;
 
-    if (cX > a) return;
+    if (cX > a || cY > (n - a)) return;
     if (w > bestState->weight) return;
     if (idx == n) {
-        if ((cX == a || cY == a) && w < bestState->weight) {
+        if (cX == a && cY == (n - a) && w < bestState->weight) {
             copyState(bestState, &state, n);
         }
-        return; 
-    }
-
-    for (int i = n - 1; i > idx - 1; i--) {
-        partition[i] = -1;
+        return;
     }
 
     int lowerBound = w + computeLowerBound(partition, n, graph);
     if (lowerBound >= bestState->weight) return;
 
+    // Explore partitioning the current vertex into set X
     partition[idx] = 0;
     int newWeightX = w;
     for (int i = 0; i < idx; i++) {
         if (partition[i] == 1) newWeightX += graph[idx][i];
     }
     State newStateX = {
-        .partition = partition,
+        .partition = (int*)malloc(n * sizeof(int)),
         .count_x = cX + 1,
         .count_y = cY,
         .weight = newWeightX
     };
+    memcpy(newStateX.partition, partition, n * sizeof(int));
     bb_dfs(idx + 1, newStateX, bestState, instance, recCalls);
+    free(newStateX.partition);
 
+    // Explore partitioning the current vertex into set Y
     partition[idx] = 1;
     int newWeightY = w;
     for (int i = 0; i < idx; i++) {
         if (partition[i] == 0) newWeightY += graph[idx][i];
     }
     State newStateY = {
-        .partition = partition,
+        .partition = (int*)malloc(n * sizeof(int)),
         .count_x = cX,
         .count_y = cY + 1,
         .weight = newWeightY
     };
+    memcpy(newStateY.partition, partition, n * sizeof(int));
     bb_dfs(idx + 1, newStateY, bestState, instance, recCalls);
+    free(newStateY.partition);
 }
 
 Solution findMinimumCut(Instance* instance) {
     State state = initialize_state(instance);
     State bestState = state;
-    bestState.weight = 100000;
+    bestState.weight = INT_MAX;
     int recCalls = 0;
 
     bb_dfs(0, state, &bestState, instance, &recCalls);
 
     printState(bestState);
-    
+
     Solution solution = {
         .partition = bestState.partition,
         .minWeight = bestState.weight,

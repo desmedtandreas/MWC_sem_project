@@ -29,7 +29,7 @@ int main() {
         // {"graphdata/graf_40_25.txt", 20},
     };
 
-    Instance* instance = createInstance(data[0].filename, data[0].a);
+    Instance* instance = createInstance(data[10].filename, data[10].a);
 
     Solution solution = findMinimumCut(instance);
 
