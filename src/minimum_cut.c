@@ -75,15 +75,15 @@ void bb_dfs(int idx, State state, State* bestState, Instance* instance, int* rec
 }
 
 Solution findMinimumCut(Instance* instance) {
-    State state = initialize_state(instance);
-    State bestState = state;
-    bestState.weight = 100000;
+    State state = initialState(instance);
+    State bestState; 
+    copyState(&bestState, &state, instance->n);
     int recCalls = 0;
 
     bb_dfs(0, state, &bestState, instance, &recCalls);
 
     printState(bestState);
-    
+
     Solution solution = {
         .partition = bestState.partition,
         .minWeight = bestState.weight,

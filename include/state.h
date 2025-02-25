@@ -14,6 +14,6 @@ void printState(State state);
 
 void copyState(State* dest, const State* src, int n);
 
-State initialize_state(Instance* instance);
+State initialState(Instance* instance);
 
 #endif

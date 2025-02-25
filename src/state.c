@@ -3,6 +3,20 @@
 #include <state.h>
 #include <instance.h>
 
+int computeWeight(State* state, Instance* instance) {
+    int weight = 0;
+    int n = instance->n;
+    int** graph = instance->graph;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            if (state->partition[i] != state->partition[j]) {
+                weight += graph[i][j];
+            }
+        }
+    }
+    return weight;
+}
+
 void printState(State state) {
     printf("Partition: ");
     for (int i = 0; i < state.count_x + state.count_y; i++) {
@@ -14,13 +28,15 @@ void printState(State state) {
     printf("Weight: %d\n", state.weight);
 }
 
-State initialize_state(Instance* instance) {
+State initialState(Instance* instance) {
+    int n = instance->n;
+    int a = instance->a;
     State state;
     state.partition = (int*)malloc(instance->n * sizeof(int));
-    memset(state.partition, -1, instance->n * sizeof(int));
-    state.count_x = 0;
-    state.count_y = 0;
-    state.weight = 0;
+    for (int i = 0; i < n; i++) state.partition[i] = i < a ? 1 : 0;
+    state.count_x = a;
+    state.count_y = n - a;
+    state.weight = computeWeight(&state, instance);
     return state;
 }
 
