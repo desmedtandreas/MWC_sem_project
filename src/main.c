@@ -18,23 +18,23 @@ int main() {
         {"graphdata/graf_30_10.txt", 10},
         {"graphdata/graf_30_10.txt", 15},
         {"graphdata/graf_30_20.txt", 15},
-        // {"graphdata/graf_32_22.txt", 10},
-        // {"graphdata/graf_32_25.txt", 12},
-        // {"graphdata/graf_35_25.txt", 12},
-        // {"graphdata/graf_35_25.txt", 17},
-        // {"graphdata/graf_40_8.txt", 15},
-        // {"graphdata/graf_40_8.txt", 20},
-        // {"graphdata/graf_40_15.txt", 15},
-        // {"graphdata/graf_40_15.txt", 20},
-        // {"graphdata/graf_40_25.txt", 20},
+        {"graphdata/graf_32_22.txt", 10},
+        {"graphdata/graf_32_25.txt", 12},
+        {"graphdata/graf_35_25.txt", 12},
+        {"graphdata/graf_35_25.txt", 17},
+        {"graphdata/graf_40_8.txt", 15},
+        {"graphdata/graf_40_8.txt", 20},
+        {"graphdata/graf_40_15.txt", 15},
+        {"graphdata/graf_40_15.txt", 20},
+        {"graphdata/graf_40_25.txt", 20},
     };
 
-    Instance* instance = createInstance(data[10].filename, data[10].a);
-
-    Solution solution = findMinimumCut(instance);
-
-    printf("Minimum cut: %d\n", solution.minWeight);
-    printf("Recursive calls: %d\n", solution.recCalls);
+    for (int i = 0; i < 14; i++) {
+        Instance* instance = createInstance(data[i].filename, data[i].a);
+        Solution solution = findMinimumCut(instance);
+        printSolution(solution, instance->n);
+        freeInstance(instance);
+    }
 
     //freeInstance(instance);
     return 0;

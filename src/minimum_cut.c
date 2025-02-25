@@ -1,10 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <time.h>
 #include "graph.h"
 #include "instance.h"
 #include "state.h"
 #include "minimum_cut.h"
+
+void printSolution(Solution solution, int n) {
+    printf("**************************************************\n");
+    // printf("Partition: ");
+    // for (int i = 0; i < n; i++) {
+    //     printf("%d ", solution.partition[i]);
+    // }
+    // printf("\n");
+    printf("Minimum cut: %d\n", solution.minWeight);
+    printf("Recursive calls: %d\n", solution.recCalls);
+    printf("Time taken: %f\n", solution.time);
+    printf("**************************************************\n");
+}
 
 int computeLowerBound(int* partition, int n, int** graph) {
     int lowerBound = 0;
@@ -82,14 +96,17 @@ Solution findMinimumCut(Instance* instance) {
     bestState.weight = INT_MAX;
     int recCalls = 0;
 
+    clock_t start_time = clock();
     bb_dfs(0, state, &bestState, instance, &recCalls);
+    clock_t end_time = clock();
 
-    printState(bestState);
+    double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
     Solution solution = {
         .partition = bestState.partition,
         .minWeight = bestState.weight,
-        .recCalls = recCalls
+        .recCalls = recCalls,
+        .time = time_taken,
     };
 
     return solution;

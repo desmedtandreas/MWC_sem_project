@@ -7,7 +7,10 @@ typedef struct Solution {
     int* partition;
     int minWeight;
     int recCalls;
+    double time;
 } Solution;
+
+void printSolution(Solution solution, int n);
 
 Solution findMinimumCut(Instance* instance);
 
