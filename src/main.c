@@ -3,10 +3,8 @@
 #include <data.h>
 #include <instance.h>
 #include <limits.h>
+#include <state.h>
 #include <minimum_cut.h>
-
-extern int* bestState;
-extern int bestWeight;
 
 int main() {
 
@@ -33,13 +31,11 @@ int main() {
         {"graphdata/graf_40_25.txt", 20},
     };
 
-    for (int i = 0; i < 15; i++) {
+    for (int i = 0; i < 10; i++) {
         Instance* instance = createInstance(data[i].filename, data[i].a);
 
-        bestState = (int*)malloc(instance->n * sizeof(int));
-        bestWeight = INT_MAX;
-
         Solution solution = findMinimumCut(instance);
+
         printSolution(solution, instance->n);
 
         freeInstance(instance);

@@ -3,12 +3,25 @@
 #include <limits.h>
 #include <time.h>
 #include <string.h>
+#include "state.h"
 #include "graph.h"
 #include "instance.h"
 #include "minimum_cut.h"
 
-int* bestState;
-int bestWeight;
+int getWeightChange(int* partition, int idx, int** graph) {
+    int weight = 0;
+    if (partition[idx] == 1) {
+        for (int i = 0; i < idx; i++) {
+            if (partition[i] == 0) weight += graph[idx][i];  // updated to use weight
+        }
+    }
+    else if (partition[idx] == 0) {
+        for (int i = 0; i < idx; i++) {
+            if (partition[i] == 1) weight += graph[idx][i];  // for computing weight change when moving to Y
+        }
+    }
+    return weight;  // return the computed weight
+}
 
 // Computes the lower bound only for vertices that are still unassigned (from idx to n-1).
 int computeLowerBound(int idx, int n, int *partition, int **graph) {
@@ -27,61 +40,41 @@ int computeLowerBound(int idx, int n, int *partition, int **graph) {
     return lowerBound;
 }
 
-void bb_dfs(int idx, int n, int a, int **graph, int *partition,
-    int cX, int cY, int w, int *recCalls) {
+void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
 
     (*recCalls)++;
 
     // If all vertices have been assigned, update the best solution if needed.
-    if (idx == n) {
-        if (w < bestWeight) {
-            bestWeight = w;
-            memcpy(bestState, partition, n * sizeof(int));
+    if (state.depth == n) {
+        if (state.weight < bestState->weight) {
+            *bestState = copyState(n, state);
         }
         return;
     }
 
-    // Compute a lower bound based on the unassigned vertices.
-    int lowerBound = w + computeLowerBound(idx, n, partition, graph);
-    if (lowerBound >= bestWeight) return;
-
-    // Branch where vertex idx is assigned to subset X (if there's still room).
-    if (cX < a) {
-    // Allocate a new partition array for this branch.
-        int *newPartition = malloc(n * sizeof(int));
-        memcpy(newPartition, partition, n * sizeof(int));
-        newPartition[idx] = 0;  // assign to X
-
-        int newWeight = w;
-        // Calculate the added weight due to edges connecting to already assigned Y vertices.
-        for (int i = 0; i < idx; i++) {
-            if (newPartition[i] == 1) newWeight += graph[idx][i];
+    state.partition[state.depth] = 0;
+    int newWeightX = state.weight + getWeightChange(state.partition, state.depth, graph);
+    State newStateX = newState(n, state.partition, state.depth + 1, state.cX + 1, state.cY, newWeightX);
+    
+    if (newStateX.cX <= n - a) {
+        if (newWeightX < bestState->weight) {
+            int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
+            if (lowerBound < bestState->weight)
+                bb_dfs(n, a, graph, newStateX, bestState, recCalls);
         }
-
-        if (newWeight < bestWeight) {
-            bb_dfs(idx + 1, n, a, graph, newPartition, cX + 1, cY, newWeight, recCalls);
-        }
-
-        free(newPartition);  // Free the copy after the recursive call returns.
     }
 
     // Branch where vertex idx is assigned to subset Y (if there's still room).
-    if (cY < (n - a)) {
-        int *newPartition = malloc(n * sizeof(int));
-        memcpy(newPartition, partition, n * sizeof(int));
-        newPartition[idx] = 1;  // assign to Y
+    state.partition[state.depth] = 1;
+    int newWeightY = state.weight + getWeightChange(state.partition, state.depth, graph);
+    State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
 
-        int newWeight = w;
-        // Calculate the added weight due to edges connecting to already assigned X vertices.
-        for (int i = 0; i < idx; i++) {
-            if (newPartition[i] == 0) newWeight += graph[idx][i];
+    if (newStateY.cY <= a) {
+        if (newWeightY < bestState->weight) {
+            int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
+            if (lowerBound < bestState->weight)
+                bb_dfs(n, a, graph, newStateY, bestState, recCalls);
         }
-
-        if (newWeight < bestWeight) {
-            bb_dfs(idx + 1, n, a, graph, newPartition, cX, cY + 1, newWeight, recCalls);
-        }
-
-    free(newPartition);
     }
 }
 
@@ -90,28 +83,23 @@ Solution findMinimumCut(Instance *instance) {
     int a = instance->a;
     int **graph = instance->graph;
 
-    // Allocate and initialize the partition array. 
-    // All vertices start unassigned (-1).
-    int *partition = (int *)malloc(n * sizeof(int));
-    for (int i = 0; i < n; i++) {
-        partition[i] = -1;
-    }
+    State state = initialState(n);
+    State bestState = initialBestState(n);
 
     int recCalls = 0;
     clock_t start_time = clock();
 
-    bb_dfs(0, n, a, graph, partition, 0, 0, 0, &recCalls);
+    bb_dfs(n, a, graph, state, &bestState, &recCalls);
 
     clock_t end_time = clock();
     double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
     Solution solution;
-    solution.partition = bestState;
-    solution.minWeight = bestWeight;
+    solution.partition = bestState.partition;
+    solution.minWeight = bestState.weight;
     solution.recCalls = recCalls;
     solution.time = time_taken;
 
-    free(partition);
     return solution;
 }
 
