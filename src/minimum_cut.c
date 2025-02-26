@@ -57,7 +57,6 @@ void bb_dfs(int idx, State state, State* bestState, Instance* instance, int* rec
     int lowerBound = w + computeLowerBound(partition, n, graph);
     if (lowerBound >= bestState->weight) return;
 
-    // Explore partitioning the current vertex into set X
     partition[idx] = 0;
     int newWeightX = w;
     for (int i = 0; i < idx; i++) {
@@ -73,7 +72,6 @@ void bb_dfs(int idx, State state, State* bestState, Instance* instance, int* rec
     bb_dfs(idx + 1, newStateX, bestState, instance, recCalls);
     free(newStateX.partition);
 
-    // Explore partitioning the current vertex into set Y
     partition[idx] = 1;
     int newWeightY = w;
     for (int i = 0; i < idx; i++) {
