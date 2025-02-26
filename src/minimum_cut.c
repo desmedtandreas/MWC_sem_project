@@ -2,110 +2,123 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <time.h>
+#include <string.h>
 #include "graph.h"
 #include "instance.h"
-#include "state.h"
 #include "minimum_cut.h"
 
-void printSolution(Solution solution, int n) {
-    printf("**************************************************\n");
-    // printf("Partition: ");
-    // for (int i = 0; i < n; i++) {
-    //     printf("%d ", solution.partition[i]);
-    // }
-    // printf("\n");
-    printf("Minimum cut: %d\n", solution.minWeight);
-    printf("Recursive calls: %d\n", solution.recCalls);
-    printf("Time taken: %f\n", solution.time);
-    printf("**************************************************\n");
-}
+int* bestState;
+int bestWeight;
 
-int computeLowerBound(int* partition, int n, int** graph) {
+// Computes the lower bound only for vertices that are still unassigned (from idx to n-1).
+int computeLowerBound(int idx, int n, int *partition, int **graph) {
     int lowerBound = 0;
-    for (int i = 0; i < n; i++) {
-        if (partition[i] == -1) {
-            int add_to_x = 0, add_to_y = 0;
-            for (int j = 0; j < n; j++) {
-                if (partition[j] == 1) add_to_x += graph[i][j];
-                if (partition[j] == 0) add_to_y += graph[i][j];
-            }
-            lowerBound += add_to_x < add_to_y ? add_to_x : add_to_y;
+    for (int i = idx; i < n; i++) {
+        int costIfX = 0, costIfY = 0;
+        // Only vertices [0, idx) are assigned.
+        for (int j = 0; j < idx; j++) {
+            if (partition[j] == 1)
+                costIfX += graph[i][j];
+            else if (partition[j] == 0)
+                costIfY += graph[i][j];
         }
+        lowerBound += (costIfX < costIfY ? costIfX : costIfY);
     }
     return lowerBound;
 }
 
-void bb_dfs(int idx, State state, State* bestState, Instance* instance, int* recCalls) {
-    (*recCalls)++;
-    int* partition = state.partition;
-    int cX = state.count_x;
-    int cY = state.count_y;
-    int w = state.weight;
-    int a = instance->a;
-    int n = instance->n;
-    int** graph = instance->graph;
+void bb_dfs(int idx, int n, int a, int **graph, int *partition,
+    int cX, int cY, int w, int *recCalls) {
 
-    if (cX > a || cY > (n - a)) return;
-    if (w > bestState->weight) return;
+    (*recCalls)++;
+
+    // If all vertices have been assigned, update the best solution if needed.
     if (idx == n) {
-        if (cX == a && cY == (n - a) && w < bestState->weight) {
-            copyState(bestState, &state, n);
+        if (w < bestWeight) {
+            bestWeight = w;
+            memcpy(bestState, partition, n * sizeof(int));
         }
         return;
     }
 
-    int lowerBound = w + computeLowerBound(partition, n, graph);
-    if (lowerBound >= bestState->weight) return;
+    // Compute a lower bound based on the unassigned vertices.
+    int lowerBound = w + computeLowerBound(idx, n, partition, graph);
+    if (lowerBound >= bestWeight) return;
 
-    partition[idx] = 0;
-    int newWeightX = w;
-    for (int i = 0; i < idx; i++) {
-        if (partition[i] == 1) newWeightX += graph[idx][i];
-    }
-    State newStateX = {
-        .partition = (int*)malloc(n * sizeof(int)),
-        .count_x = cX + 1,
-        .count_y = cY,
-        .weight = newWeightX
-    };
-    memcpy(newStateX.partition, partition, n * sizeof(int));
-    bb_dfs(idx + 1, newStateX, bestState, instance, recCalls);
-    free(newStateX.partition);
+    // Branch where vertex idx is assigned to subset X (if there's still room).
+    if (cX < a) {
+    // Allocate a new partition array for this branch.
+        int *newPartition = malloc(n * sizeof(int));
+        memcpy(newPartition, partition, n * sizeof(int));
+        newPartition[idx] = 0;  // assign to X
 
-    partition[idx] = 1;
-    int newWeightY = w;
-    for (int i = 0; i < idx; i++) {
-        if (partition[i] == 0) newWeightY += graph[idx][i];
+        int newWeight = w;
+        // Calculate the added weight due to edges connecting to already assigned Y vertices.
+        for (int i = 0; i < idx; i++) {
+            if (newPartition[i] == 1) newWeight += graph[idx][i];
+        }
+
+        if (newWeight < bestWeight) {
+            bb_dfs(idx + 1, n, a, graph, newPartition, cX + 1, cY, newWeight, recCalls);
+        }
+
+        free(newPartition);  // Free the copy after the recursive call returns.
     }
-    State newStateY = {
-        .partition = (int*)malloc(n * sizeof(int)),
-        .count_x = cX,
-        .count_y = cY + 1,
-        .weight = newWeightY
-    };
-    memcpy(newStateY.partition, partition, n * sizeof(int));
-    bb_dfs(idx + 1, newStateY, bestState, instance, recCalls);
-    free(newStateY.partition);
+
+    // Branch where vertex idx is assigned to subset Y (if there's still room).
+    if (cY < (n - a)) {
+        int *newPartition = malloc(n * sizeof(int));
+        memcpy(newPartition, partition, n * sizeof(int));
+        newPartition[idx] = 1;  // assign to Y
+
+        int newWeight = w;
+        // Calculate the added weight due to edges connecting to already assigned X vertices.
+        for (int i = 0; i < idx; i++) {
+            if (newPartition[i] == 0) newWeight += graph[idx][i];
+        }
+
+        if (newWeight < bestWeight) {
+            bb_dfs(idx + 1, n, a, graph, newPartition, cX, cY + 1, newWeight, recCalls);
+        }
+
+    free(newPartition);
+    }
 }
 
-Solution findMinimumCut(Instance* instance) {
-    State state = initialize_state(instance);
-    State bestState = state;
-    bestState.weight = INT_MAX;
+Solution findMinimumCut(Instance *instance) {
+    int n = instance->n;
+    int a = instance->a;
+    int **graph = instance->graph;
+
+    // Allocate and initialize the partition array. 
+    // All vertices start unassigned (-1).
+    int *partition = (int *)malloc(n * sizeof(int));
+    for (int i = 0; i < n; i++) {
+        partition[i] = -1;
+    }
+
     int recCalls = 0;
-
     clock_t start_time = clock();
-    bb_dfs(0, state, &bestState, instance, &recCalls);
-    clock_t end_time = clock();
 
+    bb_dfs(0, n, a, graph, partition, 0, 0, 0, &recCalls);
+
+    clock_t end_time = clock();
     double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
-    Solution solution = {
-        .partition = bestState.partition,
-        .minWeight = bestState.weight,
-        .recCalls = recCalls,
-        .time = time_taken,
-    };
+    Solution solution;
+    solution.partition = bestState;
+    solution.minWeight = bestWeight;
+    solution.recCalls = recCalls;
+    solution.time = time_taken;
 
+    free(partition);
     return solution;
+}
+
+void printSolution(Solution solution, int n) {
+    printf("**************************************************\n");
+    printf("Minimum cut: %d\n", solution.minWeight);
+    printf("Recursive calls: %d\n", solution.recCalls);
+    printf("Time taken: %f\n", solution.time);
+    printf("**************************************************\n");
 }
