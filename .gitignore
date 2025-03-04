@@ -54,3 +54,8 @@ dkms.conf
 # Apple files
 .DS_Store
 .vscode/
+
+# Documentation
+Doxyfile
+/latex/
+/html/
