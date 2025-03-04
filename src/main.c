@@ -7,7 +7,7 @@
 #include <minimum_cut.h>
 
 int main() {
-
+    // Datasets with the filename and parameter a
     Data data[] = {
         {"graphdata/graf_10_5.txt", 5},
         {"graphdata/graf_10_6b.txt", 5},
@@ -31,16 +31,19 @@ int main() {
         {"graphdata/graf_40_25.txt", 20},
     };
 
+    // Looping through the entries in the dataset
     for (int i = 0; i < 10; i++) {
+        // Create a graph instance from the file and parameter
         Instance* instance = createInstance(data[i].filename, data[i].a);
 
+        // Compute the minimum cut of the graph
         Solution solution = findMinimumCut(instance);
 
+        // Print the computed solution
         printSolution(solution, instance->n);
 
+        // Free the instance
         freeInstance(instance);
     }
-
-    //freeInstance(instance);
     return 0;
 }

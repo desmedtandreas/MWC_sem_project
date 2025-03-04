@@ -8,11 +8,12 @@
 #include "instance.h"
 #include "minimum_cut.h"
 
+// Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
     int weight = 0;
     if (partition[idx] == 1) {
         for (int i = 0; i < idx; i++) {
-            if (partition[i] == 0) weight += graph[idx][i];  // updated to use weight
+            if (partition[i] == 0) weight += graph[idx][i];  // for computing weight change when moving to X
         }
     }
     else if (partition[idx] == 0) {
@@ -35,13 +36,13 @@ int computeLowerBound(int idx, int n, int *partition, int **graph) {
             else if (partition[j] == 0)
                 costIfY += graph[i][j];
         }
-        lowerBound += (costIfX < costIfY ? costIfX : costIfY);
+        lowerBound += (costIfX < costIfY ? costIfX : costIfY); // add the minimum possible cost
     }
     return lowerBound;
 }
 
+// Reccursive function to find the minimum cut using a branch and bound DFS approach.
 void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
-
     (*recCalls)++;
 
     // If all vertices have been assigned, update the best solution if needed.
@@ -52,46 +53,48 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
         return;
     }
 
+    // Branch where vertex at depth is assigned to subset X
     state.partition[state.depth] = 0;
     int newWeightX = state.weight + getWeightChange(state.partition, state.depth, graph);
     State newStateX = newState(n, state.partition, state.depth + 1, state.cX + 1, state.cY, newWeightX);
     
-    if (newStateX.cX <= n - a) {
-        if (newWeightX < bestState->weight) {
+    if (newStateX.cX <= n - a) { // Ensure there is still room in subset X
+        if (newWeightX < bestState->weight) { // Prune if current weight is worse than best weight
             int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
-            if (lowerBound < bestState->weight)
-                bb_dfs(n, a, graph, newStateX, bestState, recCalls);
+            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
+                bb_dfs(n, a, graph, newStateX, bestState, recCalls); // Recursion
         }
     }
 
-    // Branch where vertex idx is assigned to subset Y (if there's still room).
+    // Branch where vertex idx is assigned to subset Y
     state.partition[state.depth] = 1;
     int newWeightY = state.weight + getWeightChange(state.partition, state.depth, graph);
     State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
 
-    if (newStateY.cY <= a) {
-        if (newWeightY < bestState->weight) {
+    if (newStateY.cY <= a) { // Ensure there is still room in subset Y
+        if (newWeightY < bestState->weight) { // Prune if current weight is worse than best weight
             int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
-            if (lowerBound < bestState->weight)
-                bb_dfs(n, a, graph, newStateY, bestState, recCalls);
+            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
+                bb_dfs(n, a, graph, newStateY, bestState, recCalls); // Recursion
         }
     }
 }
 
+// Function for finding the minimum cut of a graph
 Solution findMinimumCut(Instance *instance) {
     int n = instance->n;
     int a = instance->a;
     int **graph = instance->graph;
 
-    State state = initialState(n);
-    State bestState = initialBestState(n);
+    State state = initialState(n); // Initialize the first state
+    State bestState = initialBestState(n); // Initialize the best state
 
     int recCalls = 0;
-    clock_t start_time = clock();
+    clock_t start_time = clock(); // Start timing execution
 
     bb_dfs(n, a, graph, state, &bestState, &recCalls);
 
-    clock_t end_time = clock();
+    clock_t end_time = clock(); // End timing execution
     double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
 
     Solution solution;
@@ -103,6 +106,7 @@ Solution findMinimumCut(Instance *instance) {
     return solution;
 }
 
+// Print the computed solution
 void printSolution(Solution solution, int n) {
     printf("**************************************************\n");
     printf("Minimum cut: %d\n", solution.minWeight);

@@ -6,13 +6,34 @@
 #include <dirent.h>
 #include <string.h>
 
-// Function to free memory of a dynamically allocated graph
+/**
+ * @brief Frees the memory allocated for a graph.
+ * 
+ * @param graph Graph to be freed.
+ * @param n Number of vertices in the graph.
+ */
 void freeGraph(int** graph, int n);
 
-// Function to print adjacency matrix
+/**
+ * @brief Prints a graph.
+ * 
+ * Prints a graph represented as an adjacency matrix.
+ * Mainly used for debugging.
+ * 
+ * @param graph Graph to be printed.
+ * @param n Number of vertices in the graph.
+ */
 void printGraph(int** graph, int n);
 
-// Function to read graph from file
+/**
+ * @brief Reads a graph from a file.
+ * 
+ * Reads a graph from a file and returns it as an adjacency matrix.
+ * 
+ * @param filename Name of the file containing the graph.
+ * @param n Number of vertices in the graph.
+ * @return Graph represented as an adjacency matrix.
+ */
 int** readGraphFromFile(const char* filename, int n);
 
-#endif // GRAPH_H
+#endif

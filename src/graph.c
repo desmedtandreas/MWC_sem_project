@@ -4,16 +4,8 @@
 #include <string.h>
 #include <graph.h>
 
-// Allocate memory for an n x n graph
-int* createVertices(int n) {
-    int* vertices = (int*)malloc(n * sizeof(int));
-    for (int i = 0; i < n; i++) {
-        vertices[i] = -1;
-    }
-    return vertices;
-}
-
-int** createMatrix(int n) {
+// Create a dynamically allocated array of integers
+int** createGraph(int n) { // double pointer for 2D array
     int** graph = (int**)malloc(n * sizeof(int*));
     for (int i = 0; i < n; i++) {
         graph[i] = (int*)malloc(n * sizeof(int));
@@ -21,10 +13,11 @@ int** createMatrix(int n) {
     return graph;
 }
 
-int** readMatrix(FILE* file, int n) {
-    int** matrix = createMatrix(n);
+// Read adjacency matrix from a file
+int** readGraph(FILE* file, int n) {
+    int** matrix = createGraph(n); // Allocate memory for the graph
 
-    fscanf(file, "%*d");
+    fscanf(file, "%*d"); // Skip the first number (number of vertices)
 
     // Read adjacency matrix
     for (int i = 0; i < n; i++) {
@@ -43,7 +36,7 @@ void freeGraph(int** graph, int n) {
     free(graph);
 }
 
-// Print adjacency matrix
+// Print adjacency matrix (for debugging)
 void printGraph(int** matrix, int n) {
     printf("Adjacency Matrix (%d x %d):\n", n, n);
     for (int i = 0; i < n; i++) {
@@ -62,7 +55,7 @@ int** readGraphFromFile(const char* filename, int n) {
         return NULL;
     }
     
-    int** graph = readMatrix(file, n);
+    int** graph = readGraph(file, n); 
 
     fclose(file);
     printf("Read graph from file: %s\n", filename);
