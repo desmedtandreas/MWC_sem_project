@@ -33,11 +33,13 @@ int main() {
 
     // Looping through the entries in the dataset
     for (int i = 0; i < 10; i++) {
+        int numThreads = 1;
+        
         // Create a graph instance from the file and parameter
         Instance* instance = createInstance(data[i].filename, data[i].a);
 
         // Compute the minimum cut of the graph
-        Solution solution = findMinimumCut(instance);
+        Solution solution = findMinimumCut(instance, numThreads);
 
         // Print the computed solution
         printSolution(solution, instance->n);
