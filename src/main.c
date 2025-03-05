@@ -33,7 +33,7 @@ int main() {
 
     // Looping through the entries in the dataset
     for (int i = 0; i < 10; i++) {
-        int numThreads = 1;
+        int numThreads = 8;
         
         // Create a graph instance from the file and parameter
         Instance* instance = createInstance(data[i].filename, data[i].a);
