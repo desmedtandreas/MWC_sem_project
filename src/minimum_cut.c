@@ -66,7 +66,7 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
         }
     }
 
-    // Branch where vertex idx is assigned to subset Y
+    // Branch where vertex at depth is assigned to subset Y
     state.partition[state.depth] = 1;
     int newWeightY = state.weight + getWeightChange(state.partition, state.depth, graph);
     State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
