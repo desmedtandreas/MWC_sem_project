@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 #include <limits.h>
 #include <time.h>
 #include <string.h>
@@ -101,7 +102,7 @@ Solution findMinimumCut(Instance *instance, int numThreads) {
     State bestState = initialBestState(n); // Initialize the best state
 
     int recCalls = 0;
-    clock_t start_time = clock(); // Start timing execution
+    double start_time = omp_get_wtime(); // Start timing execution
     
     #pragma omp parallel num_threads(numThreads)
     {
@@ -111,8 +112,8 @@ Solution findMinimumCut(Instance *instance, int numThreads) {
         }
     }
 
-    clock_t end_time = clock(); // End timing execution
-    double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    double end_time = omp_get_wtime(); // End timing execution
+    double time_taken = (double)end_time - start_time; // Calculate time taken
 
     Solution solution;
     solution.partition = bestState.partition;

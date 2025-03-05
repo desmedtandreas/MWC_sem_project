@@ -1,4 +1,4 @@
-CC := gcc-14
+CC := gcc
 SRC_DIR := src
 BUILD_DIR := build
 
