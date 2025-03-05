@@ -6,7 +6,7 @@
 #include <state.h>
 #include <minimum_cut.h>
 
-int main() {
+int main(int argc, char *argv[]) {
     // Datasets with the filename and parameter a
     Data data[] = {
         {"graphdata/graf_10_5.txt", 5},
@@ -33,7 +33,7 @@ int main() {
 
     // Looping through the entries in the dataset
     for (int i = 0; i < 10; i++) {
-        int numThreads = 8;
+        int numThreads = atoi(argv[1]);
         
         // Create a graph instance from the file and parameter
         Instance* instance = createInstance(data[i].filename, data[i].a);
