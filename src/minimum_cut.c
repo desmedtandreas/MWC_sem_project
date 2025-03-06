@@ -9,6 +9,8 @@
 #include "instance.h"
 #include "minimum_cut.h"
 
+#define PARALLEL_THRESHOLD 10
+
 // Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
     int weight = 0;
@@ -66,11 +68,17 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
     if (newStateX.cX <= n - a) { // Ensure there is still room in subset X
         if (newWeightX < bestState->weight) { // Prune if current weight is worse than best weight
             int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                #pragma omp task shared(bestState) firstprivate(newStateX)
-                {
-                    bb_dfs(n, a, graph, newStateX, bestState, recCalls); // Recursion
+            if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
+                if (state.depth < PARALLEL_THRESHOLD) {
+                    #pragma omp task shared(bestState) firstprivate(newStateX)
+                    {
+                        bb_dfs(n, a, graph, newStateX, bestState, recCalls);
+                    }
+                } 
+                else {
+                    bb_dfs(n, a, graph, newStateX, bestState, recCalls);
                 }
+            }
         }
     }
 
@@ -82,11 +90,17 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
     if (newStateY.cY <= a) { // Ensure there is still room in subset Y
         if (newWeightY < bestState->weight) { // Prune if current weight is worse than best weight
             int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                #pragma omp task shared(bestState) firstprivate(newStateY)
-                {
-                    bb_dfs(n, a, graph, newStateY, bestState, recCalls); // Recursion
+            if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
+                if (state.depth < PARALLEL_THRESHOLD) {
+                    #pragma omp task shared(bestState) firstprivate(newStateY)
+                    {
+                        bb_dfs(n, a, graph, newStateY, bestState, recCalls);
+                    }
+                } 
+                else {
+                    bb_dfs(n, a, graph, newStateY, bestState, recCalls);
                 }
+            }
         }
     }
     #pragma omp taskwait
