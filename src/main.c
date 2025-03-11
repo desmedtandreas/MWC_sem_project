@@ -32,21 +32,20 @@ int main(int argc, char *argv[]) {
     };
 
     // Looping through the entries in the dataset
-    int amountInstances = atoi(argv[1]);
-    for (int i = 0; i < amountInstances; i++) {
-        int numThreads = atoi(argv[2]);
+    int instanceNumber = atoi(argv[1]);
+    int numThreads = atoi(argv[2]);
         
-        // Create a graph instance from the file and parameter
-        Instance* instance = createInstance(data[i].filename, data[i].a);
+    // Create a graph instance from the file and parameter
+    Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
 
-        // Compute the minimum cut of the graph
-        Solution solution = findMinimumCut(instance, numThreads);
+    // Compute the minimum cut of the graph
+    Solution solution = findMinimumCut(instance, numThreads);
 
-        // Print the computed solution
-        printSolution(solution, instance->n);
+    // Print the computed solution
+    printSolution(solution, instance->n);
 
-        // Free the instance
-        freeInstance(instance);
-    }
+    // Free the instance
+    freeInstance(instance);
+    
     return 0;
 }
