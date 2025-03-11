@@ -70,7 +70,7 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
             if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
                 if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState) firstprivate(newStateX)
+                    #pragma omp task shared(bestState, recCalls) firstprivate(newStateX)
                     {
                         bb_dfs(n, a, graph, newStateX, bestState, recCalls);
                     }
@@ -92,7 +92,7 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
             if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
                 if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState) firstprivate(newStateY)
+                    #pragma omp task shared(bestState, recCalls) firstprivate(newStateY)
                     {
                         bb_dfs(n, a, graph, newStateY, bestState, recCalls);
                     }
