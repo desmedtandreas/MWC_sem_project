@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <time.h>
+#include <omp.h>
 #include <string.h>
+#include <math.h>
 #include "state.h"
 #include "graph.h"
 #include "instance.h"
 #include "minimum_cut.h"
+
+# define MAX_QUEUE_SIZE 1000000
 
 // Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
@@ -43,12 +46,17 @@ int computeLowerBound(int idx, int n, int *partition, int **graph) {
 
 // Reccursive function to find the minimum cut using a branch and bound DFS approach.
 void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
+    #pragma omp atomic
     (*recCalls)++;
 
     // If all vertices have been assigned, update the best solution if needed.
+
     if (state.depth == n) {
-        if (state.weight < bestState->weight) {
-            *bestState = copyState(n, state);
+        #pragma omp critical
+        {
+            if (state.weight < bestState->weight) {
+                *bestState = copyState(n, state);
+            }
         }
         return;
     }
@@ -80,22 +88,74 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
     }
 }
 
+StateArray bfs_initialstates(int n, int a, int **graph, int numThreads) {
+    
+    int front = 0;
+    int rear = 0;
+    State* queue = (State*)malloc(MAX_QUEUE_SIZE * sizeof(State));
+
+    queue[rear++] = initialState(n);
+
+    while(front < rear) {
+        int levelSize = rear - front;
+
+        if (levelSize >= numThreads) {
+            State* initialStates = (State*)malloc(levelSize * sizeof(State));
+            for (int i = 0; i < levelSize; i++) {
+                initialStates[i] = copyState(n, queue[front + i]);
+            }
+            StateArray stateArray = {initialStates, levelSize};
+            free(queue);
+            return stateArray;
+        }
+
+        for (int i = 0; i < levelSize; i++) {
+            State current = queue[front++];
+            if (current.depth == n) {
+                continue;
+            }
+            if (current.cX + 1 <= n - a) {
+                current.partition[current.depth] = 0;
+                int newWeightX = current.weight + getWeightChange(current.partition, current.depth, graph);
+                State newStateX = newState(n, current.partition, current.depth + 1, current.cX + 1, current.cY, newWeightX);
+                queue[rear++] = newStateX;
+            }
+            if (current.cY + 1 <= a) {
+                current.partition[current.depth] = 1;
+                int newWeightY = current.weight + getWeightChange(current.partition, current.depth, graph);
+                State newStateY = newState(n, current.partition, current.depth + 1, current.cX, current.cY + 1, newWeightY);
+                queue[rear++] = newStateY;
+            }
+        }
+    }
+    
+    State* initialStates = (State*)malloc(rear * sizeof(State));
+    for (int i = 0; i < rear; i++) {
+        initialStates[i] = copyState(n, queue[i]);
+    }
+    StateArray stateArray = {initialStates, rear};
+    return stateArray;
+}
+
 // Function for finding the minimum cut of a graph
-Solution findMinimumCut(Instance *instance) {
+Solution findMinimumCut(Instance *instance, int numThreads) {
     int n = instance->n;
     int a = instance->a;
     int **graph = instance->graph;
 
-    State state = initialState(n); // Initialize the first state
     State bestState = initialBestState(n); // Initialize the best state
 
     int recCalls = 0;
-    clock_t start_time = clock(); // Start timing execution
+    double start_time = omp_get_wtime(); // Start timing execution
 
-    bb_dfs(n, a, graph, state, &bestState, &recCalls);
+    StateArray initialStates = bfs_initialstates(n, a, graph, numThreads);
+    #pragma omp parallel for num_threads(numThreads)
+        for (int i = 0; i < initialStates.count; i++) {
+            bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
+        }
 
-    clock_t end_time = clock(); // End timing execution
-    double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
+    double end_time = omp_get_wtime(); // End timing execution
+    double time_taken = end_time - start_time; // Calculate time taken
 
     Solution solution;
     solution.partition = bestState.partition;

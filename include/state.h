@@ -13,6 +13,11 @@ typedef struct {
     int instanceSize;  ///< Instance size of the problem (for memory management).
 } State;
 
+typedef struct {
+    State* states;
+    int count;
+} StateArray;
+
 /**
  * @brief Creates a new state.
  * 
