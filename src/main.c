@@ -35,11 +35,12 @@ int main(int argc, char* argv[]) {
     int amountInstances = atoi(argv[1]);
     for (int i = 0; i < amountInstances; i++) {
         int numThreads = atoi(argv[2]);
+        int enoughStates = atoi(argv[3]);
         // Create a graph instance from the file and parameter
         Instance* instance = createInstance(data[i].filename, data[i].a);
 
         // Compute the minimum cut of the graph
-        Solution solution = findMinimumCut(instance, numThreads);
+        Solution solution = findMinimumCut(instance, numThreads, enoughStates);
         
         // Print the computed solution
         printSolution(solution, instance->n);

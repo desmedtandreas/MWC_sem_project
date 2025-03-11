@@ -28,6 +28,6 @@ void printSolution(Solution solution, int n);
  * @param instance The given problem instance
  * @return Solution The found solution to the minimum weight cut problem
  */
-Solution findMinimumCut(Instance* instance, int numThreads);
+Solution findMinimumCut(Instance* instance, int numThreads, int enoughStates);
 
 #endif

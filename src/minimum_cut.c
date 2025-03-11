@@ -138,7 +138,7 @@ StateArray bfs_initialstates(int n, int a, int **graph, int numThreads) {
 }
 
 // Function for finding the minimum cut of a graph
-Solution findMinimumCut(Instance *instance, int numThreads) {
+Solution findMinimumCut(Instance *instance, int numThreads, int enoughStates) {
     int n = instance->n;
     int a = instance->a;
     int **graph = instance->graph;
@@ -148,7 +148,7 @@ Solution findMinimumCut(Instance *instance, int numThreads) {
     int recCalls = 0;
     double start_time = omp_get_wtime(); // Start timing execution
 
-    StateArray initialStates = bfs_initialstates(n, a, graph, numThreads);
+    StateArray initialStates = bfs_initialstates(n, a, graph, enoughStates);
     #pragma omp parallel for num_threads(numThreads)
         for (int i = 0; i < initialStates.count; i++) {
             bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
