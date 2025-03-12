@@ -103,7 +103,7 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             }
         }
     }
-    #pragma omp taskwait
+    //#pragma omp taskwait
 }
 
 // Function for finding the minimum cut of a graph
