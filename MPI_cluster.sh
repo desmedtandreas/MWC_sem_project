@@ -12,7 +12,12 @@ source /etc/profile.d/zz-cray-pe.sh
 #module load cray-mvapich2_pmix_nogpu/2.3.7
 module load cray-mvapich2_pmix_nogpu
 
+# Access the number of cores allocated per task (from the -c parameter)
+CORES_PER_TASK=$SLURM_CPUS_PER_TASK
+# Print the number of cores (for debugging/verification)
+echo "Number of cores per task: $CORES_PER_TASK"
+
 # After the srun command, write the path to your program and its arguments for running on the scheduled computing nodes:
-srun ./program.out $1
+srun ./build/mpi_program $1 $CORES_PER_TASK
 
 exit 0

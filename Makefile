@@ -3,7 +3,7 @@ CC := cc
 SRC_DIR := src
 BUILD_DIR := build
 
-EXE := $(BUILD_DIR)/program.out
+EXE := $(BUILD_DIR)/mpi_program
 
 SRC := $(wildcard $(SRC_DIR)/*.c)
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)

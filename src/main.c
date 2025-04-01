@@ -35,6 +35,8 @@ int main(int argc, char* argv[]) {
     // Looping through the entries in the dataset
     int instanceNumber = atoi(argv[1]) - 1;
     int numberOfStates = atoi(argv[2]);
+    int rank;
+    int processes;
 
     // Create a graph instance from the file and parameter
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
