@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <state.h>
 #include <minimum_cut.h>
+#include <mpi.h>
 
 int main(int argc, char* argv[]) {
     // Datasets with the filename and parameter a
@@ -33,10 +34,12 @@ int main(int argc, char* argv[]) {
 
     // Looping through the entries in the dataset
     int instanceNumber = atoi(argv[1]) - 1;
-    int numThreads = atoi(argv[2]);
-    int enoughStates = atoi(argv[3]);
+    int numberOfStates = atoi(argv[2]);
+
     // Create a graph instance from the file and parameter
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
+
+    
 
     // Compute the minimum cut of the graph
     Solution solution = findMinimumCut(instance, numThreads, enoughStates);
