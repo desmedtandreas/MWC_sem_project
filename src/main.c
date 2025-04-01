@@ -39,16 +39,23 @@ int main(int argc, char* argv[]) {
     // Create a graph instance from the file and parameter
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
 
-    
+    MPI_Init(&argc, &argv);
 
-    // Compute the minimum cut of the graph
-    Solution solution = findMinimumCut(instance, numThreads, enoughStates);
-        
-    // Print the computed solution
-    printSolution(solution, instance->n);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &processes);
+
+    if (rank == 0) {
+        printf("Number of processes: %d\n", processes);
+        printf("Instance number: %d\n", instanceNumber + 1);
+    }
+    else {
+        printf("Process %d started\n", rank);
+    }
 
     // Free the instance
     freeInstance(instance);
+
+    MPI_Finalize();
 
     return 0;
 }
