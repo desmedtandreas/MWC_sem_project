@@ -86,34 +86,34 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
     }
 }
 
-// Function for finding the minimum cut of a graph
-// Solution findMinimumCut(Instance *instance, int numThreads, int enoughStates) {
-//     int n = instance->n;
-//     int a = instance->a;
-//     int **graph = instance->graph;
+Function for finding the minimum cut of a graph
+Solution findMinimumCut(Instance *instance, int numThreads, int enoughStates) {
+    int n = instance->n;
+    int a = instance->a;
+    int **graph = instance->graph;
 
-//     State bestState = initialBestState(n); // Initialize the best state
+    State bestState = initialBestState(n); // Initialize the best state
 
-//     int recCalls = 0;
-//     double start_time = omp_get_wtime(); // Start timing execution
+    int recCalls = 0;
+    double start_time = omp_get_wtime(); // Start timing execution
 
-//     StateArray initialStates = bfs_initialstates(n, a, graph, enoughStates);
-//     #pragma omp parallel for num_threads(numThreads)
-//         for (int i = 0; i < initialStates.count; i++) {
-//             bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
-//         }
+    StateArray initialStates = bfs_initialstates(n, a, graph, enoughStates);
+    #pragma omp parallel for num_threads(numThreads)
+        for (int i = 0; i < initialStates.count; i++) {
+            bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
+        }
 
-//     double end_time = omp_get_wtime(); // End timing execution
-//     double time_taken = end_time - start_time; // Calculate time taken
+    double end_time = omp_get_wtime(); // End timing execution
+    double time_taken = end_time - start_time; // Calculate time taken
 
-//     Solution solution;
-//     solution.partition = bestState.partition;
-//     solution.minWeight = bestState.weight;
-//     solution.recCalls = recCalls;
-//     solution.time = time_taken;
+    Solution solution;
+    solution.partition = bestState.partition;
+    solution.minWeight = bestState.weight;
+    solution.recCalls = recCalls;
+    solution.time = time_taken;
 
-//     return solution;
-// }
+    return solution;
+}
 
 // Print the computed solution
 void printSolution(Solution solution, int n) {

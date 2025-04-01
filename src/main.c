@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <graph.h>
+#include <mpi.h>
 #include <data.h>
 #include <instance.h>
 #include <limits.h>
 #include <state.h>
 #include <minimum_cut.h>
-#include <mpi.h>
+#include <queue_generator.h>
+#include <mpi_send_recieve.h>
+
 
 int main(int argc, char* argv[]) {
     // Datasets with the filename and parameter a
@@ -47,11 +50,19 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &processes);
 
     if (rank == 0) {
-        printf("Number of processes: %d\n", processes);
-        printf("Instance number: %d\n", instanceNumber + 1);
+        StateArray queue = bfs_initialstates(instance->n, instance->a, instance->graph, numberOfStates);
+        printf("Initial states generated: %d\n", queue.count);
+
+        while (queue.count > 0) {
+            State state = queue.states[queue.count - 1];
+            queue.count--;
+            
+            // Send the state to the next process
+            send_state(state, rank);
+        }
     }
     else {
-        printf("Process %d started\n", rank);
+        recieve_state(state, rank);
     }
 
     // Free the instance
