@@ -9,7 +9,7 @@ SRC := $(wildcard $(SRC_DIR)/*.c)
 OBJ := $(SRC:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 OPENMP := -fopenmp
-CPPFLAGS := -Iinclude -MMD -MP
+CPPFLAGS := -Iinclude -MMD -MP -g
 CFLAGS   := -Wall $(OPENMP)
 LDLIBS   := $(OPENMP)
 

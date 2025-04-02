@@ -1,11 +1,13 @@
 #ifndef STATE_H
 #define STATE_H
 
+#define MAX_INSTANCE_SIZE 40
+
 /**
  * @brief Represents a state in the search space.
  */
 typedef struct {
-    int* partition;    ///< Partition of the elements.
+    int partition[MAX_INSTANCE_SIZE];    ///< Partition of the elements.
     int depth;         ///< Depth of the state in the search tree.
     int cX;            ///< Amount of elements in the X subset.
     int cY;            ///< Amount of elements in the Y subset. 

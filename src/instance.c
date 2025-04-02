@@ -14,6 +14,7 @@ int loadInstanceSize(const char* filename) {
     int n;
     fscanf(file, "%d", &n);
     fclose(file);
+    printf("Loaded instance size from file: %d", n);
     return n;
 }
 

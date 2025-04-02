@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "state.h"
+#include "minimum_cut.h"
 
 # define MAX_QUEUE_SIZE 1000000
 
 StateArray bfs_initialstates(int n, int a, int **graph, int numThreads) {
-    
+
     int front = 0;
     int rear = 0;
     State* queue = (State*)malloc(MAX_QUEUE_SIZE * sizeof(State));
@@ -18,10 +19,11 @@ StateArray bfs_initialstates(int n, int a, int **graph, int numThreads) {
         if (levelSize >= numThreads) {
             State* initialStates = (State*)malloc(levelSize * sizeof(State));
             for (int i = 0; i < levelSize; i++) {
-                initialStates[i] = copyState(n, queue[front + i]);
+                State state = queue[front + i];
+                initialStates[i] = copyState(n, state);
             }
-            StateArray stateArray = {initialStates, levelSize};
             free(queue);
+            StateArray stateArray = {initialStates, levelSize};
             return stateArray;
         }
 
@@ -49,6 +51,7 @@ StateArray bfs_initialstates(int n, int a, int **graph, int numThreads) {
     for (int i = 0; i < rear; i++) {
         initialStates[i] = copyState(n, queue[i]);
     }
+    free(queue);
     StateArray stateArray = {initialStates, rear};
     return stateArray;
 }

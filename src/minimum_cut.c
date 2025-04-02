@@ -8,6 +8,9 @@
 #include "graph.h"
 #include "instance.h"
 #include "minimum_cut.h"
+#include "queue_generator.h"
+
+#define PARALLEL_THRESHOLD 10
 
 // Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
@@ -43,17 +46,16 @@ int computeLowerBound(int idx, int n, int *partition, int **graph) {
 }
 
 // Reccursive function to find the minimum cut using a branch and bound DFS approach.
-void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
-    #pragma omp atomic
-    (*recCalls)++;
-
+void bb_dfs(int n, int a, int **graph, State state, int* bestSolution) {
     // If all vertices have been assigned, update the best solution if needed.
 
     if (state.depth == n) {
-        #pragma omp critical
-        {
-            if (state.weight < bestState->weight) {
-                *bestState = copyState(n, state);
+        if (state.weight < *bestSolution) {
+            #pragma omp critical
+            {
+                if (state.weight < *bestSolution) {
+                    *bestSolution = state.weight;
+                }
             }
         }
         return;
@@ -65,10 +67,19 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
     State newStateX = newState(n, state.partition, state.depth + 1, state.cX + 1, state.cY, newWeightX);
     
     if (newStateX.cX <= n - a) { // Ensure there is still room in subset X
-        if (newWeightX < bestState->weight) { // Prune if current weight is worse than best weight
+        if (newWeightX < *bestSolution) { // Prune if current weight is worse than best weight
             int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                bb_dfs(n, a, graph, newStateX, bestState, recCalls); // Recursion
+            if (lowerBound < *bestSolution) { // Prune if lower bound is worse than best weight
+                if (state.depth < PARALLEL_THRESHOLD) {
+                    #pragma omp task shared(bestSolution) firstprivate(newStateX)
+                    {
+                        bb_dfs(n, a, graph, newStateX, bestSolution);
+                    }
+                } 
+                else {
+                    bb_dfs(n, a, graph, newStateX, bestSolution);
+                }
+            }
         }
     }
 
@@ -78,48 +89,38 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
     State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
 
     if (newStateY.cY <= a) { // Ensure there is still room in subset Y
-        if (newWeightY < bestState->weight) { // Prune if current weight is worse than best weight
+        if (newWeightY < *bestSolution) { // Prune if current weight is worse than best weight
             int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                bb_dfs(n, a, graph, newStateY, bestState, recCalls); // Recursion
+            if (lowerBound < *bestSolution) { // Prune if lower bound is worse than best weight
+                if (state.depth < PARALLEL_THRESHOLD) {
+                    #pragma omp task shared(bestSolution) firstprivate(newStateY)
+                    {
+                        bb_dfs(n, a, graph, newStateY, bestSolution);
+                    }
+                } 
+                else {
+                    bb_dfs(n, a, graph, newStateY, bestSolution);
+                }
+            }   
         }
     }
+    #pragma omp taskwait
 }
 
-Function for finding the minimum cut of a graph
-Solution findMinimumCut(Instance *instance, int numThreads, int enoughStates) {
+
+// Function for finding the minimum cut of a graph
+int findMinimumCut(Instance *instance, State state, int bestSolution, int numThreads) {
     int n = instance->n;
     int a = instance->a;
     int **graph = instance->graph;
 
-    State bestState = initialBestState(n); // Initialize the best state
-
-    int recCalls = 0;
-    double start_time = omp_get_wtime(); // Start timing execution
-
-    StateArray initialStates = bfs_initialstates(n, a, graph, enoughStates);
-    #pragma omp parallel for num_threads(numThreads)
-        for (int i = 0; i < initialStates.count; i++) {
-            bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
+    #pragma omp parallel num_threads(numThreads)
+    {
+        #pragma omp single
+        {
+            bb_dfs(n, a, graph, state, &bestSolution);
         }
+    }
 
-    double end_time = omp_get_wtime(); // End timing execution
-    double time_taken = end_time - start_time; // Calculate time taken
-
-    Solution solution;
-    solution.partition = bestState.partition;
-    solution.minWeight = bestState.weight;
-    solution.recCalls = recCalls;
-    solution.time = time_taken;
-
-    return solution;
-}
-
-// Print the computed solution
-void printSolution(Solution solution, int n) {
-    printf("**************************************************\n");
-    printf("Minimum cut: %d\n", solution.minWeight);
-    printf("Recursive calls: %d\n", solution.recCalls);
-    printf("Time taken: %f\n", solution.time);
-    printf("**************************************************\n");
+    return bestSolution;
 }

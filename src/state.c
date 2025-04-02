@@ -7,20 +7,18 @@
 // Create a new state
 State newState(int size, int* partition, int depth, int cX, int cY, int weight) {
     State s;
-    int* newPartition = (int*)malloc(size * sizeof(int));
-    memcpy(newPartition, partition, size * sizeof(int)); // copy the partition
-    s.partition = newPartition;
+    memcpy(s.partition, partition, size * sizeof(int));
     s.depth = depth;
     s.cX = cX;
     s.cY = cY;
     s.weight = weight;
+    s.instanceSize = size;
     return s;
 }
 
 // Create the initial state
 State initialState(int n) {
     State s;
-    s.partition = (int*)malloc(n * sizeof(int));
     for (int i = 0; i < n; i++) {
         s.partition[i] = -1; // all elements are unassigned (-1)
     }
@@ -34,8 +32,9 @@ State initialState(int n) {
 // Create the initial best state
 State initialBestState(int n) {
     State s;
-    s.partition = (int*)malloc(n * sizeof(int));
-    s.partition = NULL; // no partition defined yet
+    for (int i = 0; i < n; i++) {
+        s.partition[i] = -1; // all elements are unassigned (-1)
+    }
     s.depth = 0;
     s.cX = 0;
     s.cY = 0;

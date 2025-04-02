@@ -3,8 +3,8 @@
 
 #include <state.h>
 
-void send_state(State state, int rank);
+void send_state(State* state, int rank);
 
-void receive_state(State state, int rank);
+void recieve_state(State* state, int rank);
 
 #endif
