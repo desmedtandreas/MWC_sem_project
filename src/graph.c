@@ -58,6 +58,5 @@ int** readGraphFromFile(const char* filename, int n) {
     int** graph = readGraph(file, n); 
 
     fclose(file);
-    printf("Read graph from file: %s\n", filename);
     return graph;
 }

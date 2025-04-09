@@ -60,6 +60,12 @@ int main(int argc, char* argv[]) {
     MPI_Comm_size(MPI_COMM_WORLD, &processes);
 
     if (rank == 0) {
+        printf("Loaded graph: %s\n", data[instanceNumber].filename);
+        printf("Number of vertices: %d\n", instance->n);
+        printf("Parameter a: %d\n", data[instanceNumber].a);
+        printf("Number of threads: %d\n", numThreads);
+        printf("Number of processes: %d\n", processes);
+        
         int numSlaves = processes - 1;
         int taskInProgress = 0;
         int slave;
