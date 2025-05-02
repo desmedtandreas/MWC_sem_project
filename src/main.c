@@ -44,6 +44,7 @@ int main(int argc, char* argv[]) {
     int numberOfStates = atoi(argv[2]);
     int numThreads = atoi(argv[3]);
     int bestSolution = INT_MAX;
+    int result;
     int rank, processes;
     double start, end;
     MPI_Status status;
@@ -83,7 +84,10 @@ int main(int argc, char* argv[]) {
             slave++;
 
             if (taskInProgress == numSlaves) {
-                MPI_Recv(&bestSolution, 1, MPI_INT, MPI_ANY_SOURCE, TAG_RESULT, MPI_COMM_WORLD, &status);
+                MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, TAG_RESULT, MPI_COMM_WORLD, &status);
+                if (result < bestSolution) {
+                    bestSolution = result;
+                }
                 slave = status.MPI_SOURCE;
                 taskInProgress--;
             }
@@ -96,7 +100,10 @@ int main(int argc, char* argv[]) {
 
 
         for (slave= 1; slave <= numSlaves; slave++) {
-            MPI_Recv(&bestSolution, 1, MPI_INT, MPI_ANY_SOURCE, TAG_RESULT, MPI_COMM_WORLD, &status);
+            MPI_Recv(&result, 1, MPI_INT, MPI_ANY_SOURCE, TAG_RESULT, MPI_COMM_WORLD, &status);
+            if (result < bestSolution) {
+                bestSolution = result;
+            }
         }
     }
     else {
@@ -105,14 +112,14 @@ int main(int argc, char* argv[]) {
         while(!end) {
             MPI_Recv(&state, totalSize, MPI_BYTE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if (status.MPI_TAG == TAG_TERMINATE) {
-                MPI_Send(&bestSolution, 1, MPI_INT, 0, TAG_RESULT, MPI_COMM_WORLD);
+                MPI_Send(&result, 1, MPI_INT, 0, TAG_RESULT, MPI_COMM_WORLD);
                 end = 1;
             } else if (status.MPI_TAG == TAG_STATE) {
                 MPI_Recv(&bestSolution, 1, MPI_INT, 0, TAG_BEST_SOLUTION, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-                bestSolution = findMinimumCut(instance, state, bestSolution, numThreads);
+                result = findMinimumCut(instance, state, bestSolution, numThreads);
 
-                MPI_Send(&bestSolution, 1, MPI_INT, 0, TAG_RESULT, MPI_COMM_WORLD);
+                MPI_Send(&result, 1, MPI_INT, 0, TAG_RESULT, MPI_COMM_WORLD);
             }
         }
     }
