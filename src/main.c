@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     // Looping through the entries in the dataset
     int instanceNumber = atoi(argv[1]) - 1;
     int numThreads = atoi(argv[2]);
-    int enoughStates = atoi(argv[3]);
+    int enoughStates = numThreads;
     // Create a graph instance from the file and parameter
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
 
