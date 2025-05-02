@@ -1,0 +1,2 @@
+srun: error: cf-prod-node-041: task 0: Exited with exit code 2
+slurmstepd: error: execve(): /home/desmeand/MWC_sem_project/./build/program: No such file or directory

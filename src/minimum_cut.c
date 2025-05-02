@@ -168,7 +168,6 @@ Solution findMinimumCut(Instance *instance, int numThreads, int enoughStates) {
 
 // Print the computed solution
 void printSolution(Solution solution, int n) {
-    printf("Data Parallel");
     printf("**************************************************\n");
     printf("Minimum cut: %d\n", solution.minWeight);
     printf("Recursive calls: %d\n", solution.recCalls);
