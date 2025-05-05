@@ -1,0 +1,8 @@
+cores = 16
+
+Read graph from file: graphdata/graf_32_25.txt
+**************************************************
+Minimum cut: 18114
+Recursive calls: 29901818
+Time taken: 19.268869
+**************************************************
