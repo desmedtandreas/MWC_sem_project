@@ -34,7 +34,9 @@ int main(int argc, char *argv[]) {
     // Looping through the entries in the dataset
     int instanceNumber = atoi(argv[1]) - 1;
     int numThreads = atoi(argv[2]);
-        
+    
+    printf("Task Parallel | Instance %d | a = %d\n", instanceNumber + 1, data[instanceNumber].a);
+    printf("Threads: %d\n", numThreads);
     // Create a graph instance from the file and parameter
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
 
