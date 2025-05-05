@@ -62,5 +62,12 @@ State copyState(int size, State s);
  */
 void printState(State s);
 
+/**
+ * @brief Frees the memory allocated for a state.
+ * 
+ * @param s State to be freed.
+ */
+void freeState(State s);
+
 #endif
     

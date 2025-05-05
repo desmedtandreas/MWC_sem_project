@@ -70,13 +70,15 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
             if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
                 if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState, recCalls) firstprivate(newStateX)
+                    #pragma omp task shared(bestState, recCalls)
                     {
                         bb_dfs(n, a, graph, newStateX, bestState, recCalls);
+                        freeState(newStateX);
                     }
                 } 
                 else {
                     bb_dfs(n, a, graph, newStateX, bestState, recCalls);
+                    freeState(newStateX);
                 }
             }
         }
@@ -92,18 +94,20 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
             if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
                 if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState, recCalls) firstprivate(newStateY)
+                    #pragma omp task shared(bestState, recCalls)
                     {
                         bb_dfs(n, a, graph, newStateY, bestState, recCalls);
+                        freeState(newStateY);
                     }
                 } 
                 else {
                     bb_dfs(n, a, graph, newStateY, bestState, recCalls);
+                    freeState(newStateY);
                 }
             }
         }
     }
-    //#pragma omp taskwait
+    #pragma omp taskwait
 }
 
 // Function for finding the minimum cut of a graph
@@ -125,6 +129,8 @@ Solution findMinimumCut(Instance *instance, int numThreads) {
             bb_dfs(n, a, graph, state, &bestState, &recCalls);
         }
     }
+
+    freeState(state);
 
     double end_time = omp_get_wtime(); // End timing execution
     double time_taken = end_time - start_time; // Calculate time taken

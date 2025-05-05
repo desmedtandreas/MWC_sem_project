@@ -59,3 +59,10 @@ void printState(State s) {
     printf("Depth: %d cX: %d cY: %d Weight: %d\n", s.depth, s.cX, s.cY, s.weight);
     printf("\n");
 }
+
+void freeState(State s) {
+    if (s.partition != NULL) {
+        free(s.partition);
+        s.partition = NULL;
+    }
+}
