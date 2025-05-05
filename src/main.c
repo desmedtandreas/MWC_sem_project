@@ -32,8 +32,9 @@ int main(int argc, char* argv[]) {
     };
 
     // Looping through the entries in the dataset
-    int instanceNumber = atoi(argv[1]);
+    int instanceNumber = atoi(argv[1]) - 1;
 
+    printf("Sequential | Instance %d | a = %d\n", instanceNumber + 1, data[instanceNumber].a);
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
 
     // Compute the minimum cut of the graph

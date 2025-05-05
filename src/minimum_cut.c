@@ -42,42 +42,58 @@ int computeLowerBound(int idx, int n, int *partition, int **graph) {
 }
 
 // Reccursive function to find the minimum cut using a branch and bound DFS approach.
-void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
+void bb_dfs(int n, int a, int **graph, State *state, State* bestState, long long unsigned int *recCalls) {
     (*recCalls)++;
 
-    // If all vertices have been assigned, update the best solution if needed.
-    if (state.depth == n) {
-        if (state.weight < bestState->weight) {
-            *bestState = copyState(n, state);
+    if (state->depth == n) {
+        if (state->weight < bestState->weight) {
+            *bestState = copyState(n, *state);
         }
         return;
     }
 
-    // Branch where vertex at depth is assigned to subset X
-    state.partition[state.depth] = 0;
-    int newWeightX = state.weight + getWeightChange(state.partition, state.depth, graph);
-    State newStateX = newState(n, state.partition, state.depth + 1, state.cX + 1, state.cY, newWeightX);
-    
-    if (newStateX.cX <= n - a) { // Ensure there is still room in subset X
-        if (newWeightX < bestState->weight) { // Prune if current weight is worse than best weight
-            int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                bb_dfs(n, a, graph, newStateX, bestState, recCalls); // Recursion
+    int currentDepth = state->depth;
+    int originalWeight = state->weight;
+    int originalCX = state->cX;
+    int originalCY = state->cY;
+
+    // --- Try assigning current vertex to subset X ---
+    state->partition[currentDepth] = 0;
+    int weightX = originalWeight + getWeightChange(state->partition, currentDepth, graph);
+    state->weight = weightX;
+    state->cX = originalCX + 1;
+    state->depth = currentDepth + 1;
+
+    if (state->cX <= n - a && weightX < bestState->weight) {
+        int lowerBound = weightX + computeLowerBound(state->depth, n, state->partition, graph);
+        if (lowerBound < bestState->weight) {
+            bb_dfs(n, a, graph, state, bestState, recCalls);
         }
     }
 
-    // Branch where vertex at depth is assigned to subset Y
-    state.partition[state.depth] = 1;
-    int newWeightY = state.weight + getWeightChange(state.partition, state.depth, graph);
-    State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
+    // Backtrack state
+    state->depth = currentDepth;
+    state->weight = originalWeight;
+    state->cX = originalCX;
 
-    if (newStateY.cY <= a) { // Ensure there is still room in subset Y
-        if (newWeightY < bestState->weight) { // Prune if current weight is worse than best weight
-            int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                bb_dfs(n, a, graph, newStateY, bestState, recCalls); // Recursion
+    // --- Try assigning current vertex to subset Y ---
+    state->partition[currentDepth] = 1;
+    int weightY = originalWeight + getWeightChange(state->partition, currentDepth, graph);
+    state->weight = weightY;
+    state->cY = originalCY + 1;
+    state->depth = currentDepth + 1;
+
+    if (state->cY <= a && weightY < bestState->weight) {
+        int lowerBound = weightY + computeLowerBound(state->depth, n, state->partition, graph);
+        if (lowerBound < bestState->weight) {
+            bb_dfs(n, a, graph, state, bestState, recCalls);
         }
     }
+
+    // Backtrack again
+    state->depth = currentDepth;
+    state->weight = originalWeight;
+    state->cY = originalCY;
 }
 
 // Function for finding the minimum cut of a graph
@@ -89,10 +105,10 @@ Solution findMinimumCut(Instance *instance) {
     State state = initialState(n); // Initialize the first state
     State bestState = initialBestState(n); // Initialize the best state
 
-    int recCalls = 0;
+    unsigned long long int recCalls = 0;
     clock_t start_time = clock(); // Start timing execution
 
-    bb_dfs(n, a, graph, state, &bestState, &recCalls);
+    bb_dfs(n, a, graph, &state, &bestState, &recCalls);
 
     clock_t end_time = clock(); // End timing execution
     double time_taken = (double)(end_time - start_time) / CLOCKS_PER_SEC;
@@ -110,7 +126,7 @@ Solution findMinimumCut(Instance *instance) {
 void printSolution(Solution solution, int n) {
     printf("**************************************************\n");
     printf("Minimum cut: %d\n", solution.minWeight);
-    printf("Recursive calls: %d\n", solution.recCalls);
+    printf("Recursive calls: %lld\n", solution.recCalls);
     printf("Time taken: %f\n", solution.time);
     printf("**************************************************\n");
 }

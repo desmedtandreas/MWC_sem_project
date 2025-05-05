@@ -9,7 +9,7 @@
 typedef struct Solution {
     int* partition; ///< Array of size n that stores the partition of the vertices
     int minWeight;  ///< Minimum weight of the cut
-    int recCalls;   ///< Number of recursive calls
+    unsigned long long int recCalls;   ///< Number of recursive calls
     double time;    ///< Time taken to compute the cut
 } Solution;
 
