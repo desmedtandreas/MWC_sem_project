@@ -36,7 +36,8 @@ int main(int argc, char* argv[]) {
     int numThreads = atoi(argv[2]);
     int enoughStates = numThreads;
 
-    printf("Data Parallelism: instance %d, numThreads %d\n", instanceNumber + 1, numThreads);
+    printf("Data Parallel | Instance %d | a = %d\n", instanceNumber + 1, data[instanceNumber].a);
+    printf("Threads: %d\n", numThreads);
     
     // Create a graph instance from the file and parameter
     Instance* instance = createInstance(data[instanceNumber].filename, data[instanceNumber].a);
