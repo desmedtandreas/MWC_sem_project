@@ -1,0 +1,14 @@
+#!/bin/bash
+instances=(13 14 15 16 17)
+nodes=(3 4 5)
+cores=(2 4 8 16 32)
+
+> configurations.txt  # clear file
+
+for inst in "${instances[@]}"; do
+  for n in "${nodes[@]}"; do
+    for c in "${cores[@]}"; do
+      echo "$inst $n $c $((n * 10))" >> configurations.txt
+    done
+  done
+done
