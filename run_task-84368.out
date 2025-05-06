@@ -1,5 +1,5 @@
 cores = 4
-instance = 12
+instance = 13
 
 Read graph from file: graphdata/graf_32_25.txt
 **************************************************
