@@ -1,61 +1,70 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <state.h>
 #include <string.h>
 #include <limits.h>
+#include "state.h"
 
-// Create a new state
-State newState(int size, int* partition, int depth, int cX, int cY, int weight) {
-    State s;
-    int* newPartition = (int*)malloc(size * sizeof(int));
-    memcpy(newPartition, partition, size * sizeof(int)); // copy the partition
-    s.partition = newPartition;
-    s.depth = depth;
-    s.cX = cX;
-    s.cY = cY;
-    s.weight = weight;
-    return s;
-}
+State* newState(int size, const int *partition, int depth, int cX, int cY, int weight) {
+    State *s = (State *)malloc(sizeof(State));
+    if (!s) return NULL;
 
-// Create the initial state
-State initialState(int n) {
-    State s;
-    s.partition = (int*)malloc(n * sizeof(int));
-    for (int i = 0; i < n; i++) {
-        s.partition[i] = -1; // all elements are unassigned (-1)
+    s->partition = (int *)malloc(size * sizeof(int));
+    if (!s->partition) {
+        free(s);
+        return NULL;
     }
-    s.depth = 0;
-    s.cX = 0;
-    s.cY = 0;
-    s.weight = 0;
+
+    memcpy(s->partition, partition, size * sizeof(int));
+
+    s->depth = depth;
+    s->cX = cX;
+    s->cY = cY;
+    s->weight = weight;
+    s->instanceSize = size;
     return s;
 }
 
-// Create the initial best state
-State initialBestState(int n) {
-    State s;
-    s.partition = (int*)malloc(n * sizeof(int));
-    s.partition = NULL; // no partition defined yet
-    s.depth = 0;
-    s.cX = 0;
-    s.cY = 0;
-    s.weight = INT_MAX; // set to maximum value
-    return s;
-}
+State* initialState(int n) {
+    State *s = (State *)malloc(sizeof(State));
+    if (!s) return NULL;
 
-// Copy a state (deep copy = new memory allocation)
-State copyState(int size, State s) {
-    State copiedState = newState(size, s.partition, s.depth, s.cX, s.cY, s.weight);
-    return copiedState;
-}
-
-// Print a state (for debugging)
-void printState(State s) {
-    printf("State: ");
-    printf("Partition: ");
-    for (int i = 0; i < s.depth; i++) {
-        printf("%d ", s.partition[i]);
+    s->partition = (int *)malloc(n * sizeof(int));
+    if (!s->partition) {
+        free(s);
+        return NULL;
     }
-    printf("Depth: %d cX: %d cY: %d Weight: %d\n", s.depth, s.cX, s.cY, s.weight);
-    printf("\n");
+
+    for (int i = 0; i < n; ++i)
+        s->partition[i] = -1;
+
+    s->depth = 0;
+    s->cX = 0;
+    s->cY = 0;
+    s->weight = 0;
+    s->instanceSize = n;
+    return s;
+}
+
+State* initialBestState(int n) {
+    State *s = initialState(n);
+    if (s) s->weight = INT_MAX;
+    return s;
+}
+
+State* copyState(int size, const State *src) {
+    return newState(size, src->partition, src->depth, src->cX, src->cY, src->weight);
+}
+
+void printState(const State *s) {
+    printf("State: Partition: ");
+    for (int i = 0; i < s->depth; ++i)
+        printf("%d ", s->partition[i]);
+    printf(" | Depth: %d  cX: %d  cY: %d  Weight: %d\n",
+           s->depth, s->cX, s->cY, s->weight);
+}
+
+void freeState(State *s) {
+    if (!s) return;
+    free(s->partition);
+    free(s);
 }

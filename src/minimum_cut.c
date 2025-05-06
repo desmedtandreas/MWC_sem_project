@@ -1,172 +1,161 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <omp.h>
-#include <string.h>
 #include <math.h>
+
 #include "state.h"
 #include "graph.h"
 #include "instance.h"
 #include "minimum_cut.h"
 
-# define MAX_QUEUE_SIZE 1000000
+#define MAX_QUEUE_SIZE 1000000
 
-// Computes the weight change when a vertex moves between partitions
-int getWeightChange(int* partition, int idx, int** graph) {
+int getWeightChange(const int *partition, int idx, int **graph) {
     int weight = 0;
     if (partition[idx] == 1) {
         for (int i = 0; i < idx; i++) {
-            if (partition[i] == 0) weight += graph[idx][i];  // for computing weight change when moving to X
+            if (partition[i] == 0) weight += graph[idx][i];
         }
-    }
-    else if (partition[idx] == 0) {
+    } else if (partition[idx] == 0) {
         for (int i = 0; i < idx; i++) {
-            if (partition[i] == 1) weight += graph[idx][i];  // for computing weight change when moving to Y
+            if (partition[i] == 1) weight += graph[idx][i];
         }
     }
-    return weight;  // return the computed weight
+    return weight;
 }
 
-// Computes the lower bound only for vertices that are still unassigned (from idx to n-1).
-int computeLowerBound(int idx, int n, int *partition, int **graph) {
+int computeLowerBound(int idx, int n, const int *partition, int **graph) {
     int lowerBound = 0;
     for (int i = idx; i < n; i++) {
         int costIfX = 0, costIfY = 0;
-        // Only vertices [0, idx) are assigned.
         for (int j = 0; j < idx; j++) {
             if (partition[j] == 1)
                 costIfX += graph[i][j];
             else if (partition[j] == 0)
                 costIfY += graph[i][j];
         }
-        lowerBound += (costIfX < costIfY ? costIfX : costIfY); // add the minimum possible cost
+        lowerBound += (costIfX < costIfY ? costIfX : costIfY);
     }
     return lowerBound;
 }
 
-// Reccursive function to find the minimum cut using a branch and bound DFS approach.
-void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
+void bb_dfs(int n, int a, int **graph, State *state, State **bestState, int *recCalls) {
     #pragma omp atomic
     (*recCalls)++;
 
-    // If all vertices have been assigned, update the best solution if needed.
-
-    if (state.depth == n) {
+    if (state->depth == n) {
         #pragma omp critical
         {
-            if (state.weight < bestState->weight) {
+            if (state->weight < (*bestState)->weight) {
+                freeState(*bestState);
                 *bestState = copyState(n, state);
             }
         }
         return;
     }
 
-    // Branch where vertex at depth is assigned to subset X
-    state.partition[state.depth] = 0;
-    int newWeightX = state.weight + getWeightChange(state.partition, state.depth, graph);
-    State newStateX = newState(n, state.partition, state.depth + 1, state.cX + 1, state.cY, newWeightX);
-    
-    if (newStateX.cX <= n - a) { // Ensure there is still room in subset X
-        if (newWeightX < bestState->weight) { // Prune if current weight is worse than best weight
-            int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                bb_dfs(n, a, graph, newStateX, bestState, recCalls); // Recursion
+    int idx = state->depth;
+    int saved = state->partition[idx];
+
+    if (state->cX + 1 <= n - a) {
+        state->partition[idx] = 0;
+        int newWeightX = state->weight + getWeightChange(state->partition, idx, graph);
+        if (newWeightX < (*bestState)->weight) {
+            State *newStateX = newState(n, state->partition, idx + 1, state->cX + 1, state->cY, newWeightX);
+            int lowerBound = newWeightX + computeLowerBound(newStateX->depth, n, newStateX->partition, graph);
+            if (lowerBound < (*bestState)->weight)
+                bb_dfs(n, a, graph, newStateX, bestState, recCalls);
+            freeState(newStateX);
         }
     }
 
-    // Branch where vertex at depth is assigned to subset Y
-    state.partition[state.depth] = 1;
-    int newWeightY = state.weight + getWeightChange(state.partition, state.depth, graph);
-    State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
-
-    if (newStateY.cY <= a) { // Ensure there is still room in subset Y
-        if (newWeightY < bestState->weight) { // Prune if current weight is worse than best weight
-            int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
-            if (lowerBound < bestState->weight) // Prune if lower bound is worse than best weight
-                bb_dfs(n, a, graph, newStateY, bestState, recCalls); // Recursion
+    if (state->cY + 1 <= a) {
+        state->partition[idx] = 1;
+        int newWeightY = state->weight + getWeightChange(state->partition, idx, graph);
+        if (newWeightY < (*bestState)->weight) {
+            State *newStateY = newState(n, state->partition, idx + 1, state->cX, state->cY + 1, newWeightY);
+            int lowerBound = newWeightY + computeLowerBound(newStateY->depth, n, newStateY->partition, graph);
+            if (lowerBound < (*bestState)->weight)
+                bb_dfs(n, a, graph, newStateY, bestState, recCalls);
+            freeState(newStateY);
         }
     }
+
+    state->partition[idx] = saved;
 }
 
-StateArray bfs_initialstates(int n, int a, int **graph, int numThreads) {
-    
-    int front = 0;
-    int rear = 0;
-    State* queue = (State*)malloc(MAX_QUEUE_SIZE * sizeof(State));
+StateArray bfs_initialstates(int n, int a, int **graph, int enoughStates) {
+    State **queue = (State **)malloc(MAX_QUEUE_SIZE * sizeof(State *));
+    int front = 0, rear = 0;
 
     queue[rear++] = initialState(n);
 
-    while(front < rear) {
+    while (front < rear) {
         int levelSize = rear - front;
 
-        if (levelSize >= numThreads) {
-            State* initialStates = (State*)malloc(levelSize * sizeof(State));
-            for (int i = 0; i < levelSize; i++) {
-                initialStates[i] = copyState(n, queue[front + i]);
-            }
-            StateArray stateArray = {initialStates, levelSize};
-            free(queue);
-            return stateArray;
+        if (levelSize >= enoughStates) {
+            StateArray result = { &queue[front], levelSize };
+            return result;
         }
 
         for (int i = 0; i < levelSize; i++) {
-            State current = queue[front++];
-            if (current.depth == n) {
-                continue;
-            }
-            if (current.cX + 1 <= n - a) {
-                current.partition[current.depth] = 0;
-                int newWeightX = current.weight + getWeightChange(current.partition, current.depth, graph);
-                State newStateX = newState(n, current.partition, current.depth + 1, current.cX + 1, current.cY, newWeightX);
+            State *current = queue[front++];
+            if (current->depth == n) continue;
+
+            int idx = current->depth;
+
+            if (current->cX + 1 <= n - a) {
+                current->partition[idx] = 0;
+                int newWeightX = current->weight + getWeightChange(current->partition, idx, graph);
+                State *newStateX = newState(n, current->partition, idx + 1, current->cX + 1, current->cY, newWeightX);
                 queue[rear++] = newStateX;
             }
-            if (current.cY + 1 <= a) {
-                current.partition[current.depth] = 1;
-                int newWeightY = current.weight + getWeightChange(current.partition, current.depth, graph);
-                State newStateY = newState(n, current.partition, current.depth + 1, current.cX, current.cY + 1, newWeightY);
+
+            if (current->cY + 1 <= a) {
+                current->partition[idx] = 1;
+                int newWeightY = current->weight + getWeightChange(current->partition, idx, graph);
+                State *newStateY = newState(n, current->partition, idx + 1, current->cX, current->cY + 1, newWeightY);
                 queue[rear++] = newStateY;
             }
+
+            current->partition[idx] = -1;
         }
     }
-    
-    State* initialStates = (State*)malloc(rear * sizeof(State));
-    for (int i = 0; i < rear; i++) {
-        initialStates[i] = copyState(n, queue[i]);
-    }
-    StateArray stateArray = {initialStates, rear};
-    return stateArray;
+
+    StateArray result = { queue, rear };
+    return result;
 }
 
-// Function for finding the minimum cut of a graph
 Solution findMinimumCut(Instance *instance, int numThreads, int enoughStates) {
     int n = instance->n;
     int a = instance->a;
     int **graph = instance->graph;
 
-    State bestState = initialBestState(n); // Initialize the best state
-
+    State *bestState = initialBestState(n);
     int recCalls = 0;
-    double start_time = omp_get_wtime(); // Start timing execution
+    double start_time = omp_get_wtime();
 
     StateArray initialStates = bfs_initialstates(n, a, graph, enoughStates);
-    #pragma omp parallel for num_threads(numThreads)
-        for (int i = 0; i < initialStates.count; i++) {
-            bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
-        }
 
-    double end_time = omp_get_wtime(); // End timing execution
-    double time_taken = end_time - start_time; // Calculate time taken
+    #pragma omp parallel for num_threads(numThreads)
+    for (int i = 0; i < initialStates.count; i++) {
+        bb_dfs(n, a, graph, initialStates.states[i], &bestState, &recCalls);
+    }
+
+    double end_time = omp_get_wtime();
+    double time_taken = end_time - start_time;
 
     Solution solution;
-    solution.partition = bestState.partition;
-    solution.minWeight = bestState.weight;
+    solution.partition = bestState->partition;
+    solution.minWeight = bestState->weight;
     solution.recCalls = recCalls;
     solution.time = time_taken;
 
     return solution;
 }
 
-// Print the computed solution
 void printSolution(Solution solution, int n) {
     printf("**************************************************\n");
     printf("Minimum cut: %d\n", solution.minWeight);

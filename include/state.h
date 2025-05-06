@@ -1,71 +1,71 @@
 #ifndef STATE_H
 #define STATE_H
 
-/**
- * @brief Represents a state in the search space.
- */
 typedef struct {
-    int* partition;    ///< Partition of the elements.
-    int depth;         ///< Depth of the state in the search tree.
-    int cX;            ///< Amount of elements in the X subset.
-    int cY;            ///< Amount of elements in the Y subset. 
-    int weight;        ///< Weight associated with the state.
-    int instanceSize;  ///< Instance size of the problem (for memory management).
+    int* partition;
+    int depth;
+    int cX;
+    int cY;
+    int weight;
+    int instanceSize;
 } State;
 
 typedef struct {
-    State* states;
+    State** states;
     int count;
 } StateArray;
 
 /**
- * @brief Creates a new state.
+ * @brief Creates a new state (heap-allocated).
  * 
  * @param size Size of the partition.
- * @param partition Partition of the elements.
- * @param depth Depth of the state in the search tree.
- * @param cX Amount of elements in the X subset.
- * @param cY Amount of elements in the Y subset.
- * @param weight Weight associated with the state.
- * @return New state.
+ * @param partition Partition array.
+ * @param depth Current depth in search tree.
+ * @param cX Number of elements in subset X.
+ * @param cY Number of elements in subset Y.
+ * @param weight Weight of the current state.
+ * @return Pointer to the new state.
  */
-State newState(int size, int* partition, int depth, int cX, int cY, int weight);
+State* newState(int size, const int* partition, int depth, int cX, int cY, int weight);
 
 /**
- * @brief Creates an initial starting state.
+ * @brief Creates the initial state (heap-allocated).
  * 
- * @param n Size of the partition.
- * @return New state.
+ * @param n Problem size.
+ * @return Pointer to the initial state.
  */
-State initialState(int n);
+State* initialState(int n);
 
 /**
- * @brief Creates an initial best state.
+ * @brief Creates an initial best state (heap-allocated).
  * 
- * @param n Size of the partition.
- * @return An initial state
+ * @param n Problem size.
+ * @return Pointer to the initial best state.
  */
-State initialBestState(int n);
+State* initialBestState(int n);
 
 /**
- * @brief Copies a state.
+ * @brief Copies a state deeply (heap-allocated).
  * 
- * Makes a deep copy of a state, allocating new memory for the partition.
- * 
- * @param s State to be copied.
- * @return Copy of the given state.
+ * @param size Size of the partition.
+ * @param s State to copy.
+ * @return Pointer to the copied state.
  */
-State copyState(int size, State s);
+State* copyState(int size, const State* s);
 
 /**
- * @brief Print a state.
+ * @brief Prints a state (for debugging).
  * 
- * Prints a state and its parameters.
- * Mainly used for debugging.
- * 
- * @param s State to be printed.
+ * @param s Pointer to the state to print.
  */
-void printState(State s);
+void printState(const State* s);
+
+/**
+ * @brief Frees a state (partition + struct).
+ * 
+ * @param s Pointer to the state to free.
+ */
+void freeState(State* s);
 
 #endif
     

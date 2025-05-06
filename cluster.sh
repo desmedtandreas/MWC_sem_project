@@ -8,14 +8,13 @@
 # Activation of HPE CPE
 source /etc/profile.d/zz-cray-pe.sh
 
-# Setting environment variables for the scheduled task
-#module load cray-mvapich2_pmix_nogpu/2.3.7
+# Load necessary modules
 module load cray-mvapich2_pmix_nogpu
 
-# Access the number of cores allocated per task (from the -c parameter)
+# Access the number of cores allocated per task
 CORES_PER_TASK=$SLURM_CPUS_PER_TASK
 
-# After the srun command, write the path to your program and its arguments for running on the scheduled computing nodes:
+# Run the program
 srun ./build/program $1 $CORES_PER_TASK
 
 exit 0
