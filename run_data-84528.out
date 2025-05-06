@@ -1,0 +1,8 @@
+Data Parallel | Instance 15 | a = 17
+Threads: 2
+Read graph from file: graphdata/graf_35_25.txt
+**************************************************
+Minimum cut: 21163
+Recursive calls: 196425590
+Time taken: 599.412270
+**************************************************
