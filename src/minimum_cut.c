@@ -9,7 +9,7 @@
 #include "instance.h"
 #include "minimum_cut.h"
 
-#define PARALLEL_THRESHOLD 30
+#define PARALLEL_THRESHOLD 5
 
 // Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
@@ -70,7 +70,7 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
             if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
                 if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState, recCalls)
+                    #pragma omp task shared(bestState, recCalls) if(state.depth < PARALLEL_THRESHOLD)
                     {
                         bb_dfs(n, a, graph, newStateX, bestState, recCalls);
                         freeState(newStateX);
@@ -94,7 +94,7 @@ void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCa
             int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
             if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
                 if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState, recCalls)
+                    #pragma omp task shared(bestState, recCalls) if(state.depth < PARALLEL_THRESHOLD)
                     {
                         bb_dfs(n, a, graph, newStateY, bestState, recCalls);
                         freeState(newStateY);
