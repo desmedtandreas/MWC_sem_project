@@ -1,0 +1,8 @@
+Task Parallel | Instance 16 | a = 15
+Threads: 32
+Read graph from file: graphdata/graf_40_8.txt
+**************************************************
+Minimum cut: 4256
+Recursive calls: 13548633
+Time taken: 11.890822
+**************************************************

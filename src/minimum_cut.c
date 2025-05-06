@@ -9,7 +9,7 @@
 #include "instance.h"
 #include "minimum_cut.h"
 
-#define PARALLEL_THRESHOLD 10
+#define PARALLEL_THRESHOLD 30
 
 // Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
