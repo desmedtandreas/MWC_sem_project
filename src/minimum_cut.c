@@ -11,117 +11,111 @@
 
 #define PARALLEL_THRESHOLD 5
 
-// Computes the weight change when a vertex moves between partitions
 int getWeightChange(int* partition, int idx, int** graph) {
     int weight = 0;
     if (partition[idx] == 1) {
         for (int i = 0; i < idx; i++) {
-            if (partition[i] == 0) weight += graph[idx][i];  // for computing weight change when moving to X
+            if (partition[i] == 0) weight += graph[idx][i];
         }
-    }
-    else if (partition[idx] == 0) {
+    } else if (partition[idx] == 0) {
         for (int i = 0; i < idx; i++) {
-            if (partition[i] == 1) weight += graph[idx][i];  // for computing weight change when moving to Y
+            if (partition[i] == 1) weight += graph[idx][i];
         }
     }
-    return weight;  // return the computed weight
+    return weight;
 }
 
-// Computes the lower bound only for vertices that are still unassigned (from idx to n-1).
 int computeLowerBound(int idx, int n, int *partition, int **graph) {
     int lowerBound = 0;
     for (int i = idx; i < n; i++) {
         int costIfX = 0, costIfY = 0;
-        // Only vertices [0, idx) are assigned.
         for (int j = 0; j < idx; j++) {
             if (partition[j] == 1)
                 costIfX += graph[i][j];
             else if (partition[j] == 0)
                 costIfY += graph[i][j];
         }
-        lowerBound += (costIfX < costIfY ? costIfX : costIfY); // add the minimum possible cost
+        lowerBound += (costIfX < costIfY ? costIfX : costIfY);
     }
     return lowerBound;
 }
 
-// Reccursive function to find the minimum cut using a branch and bound DFS approach.
-void bb_dfs(int n, int a, int **graph, State state, State* bestState, int *recCalls) {
+void bb_dfs(int n, int a, int **graph, State *state, State **bestState, int *recCalls) {
     #pragma omp atomic
     (*recCalls)++;
 
-    // If all vertices have been assigned, update the best solution if needed.
-    if (state.depth == n) {
+    if (state->depth == n) {
         #pragma omp critical
         {
-            if (state.weight < bestState->weight) {
+            if (state->weight < (*bestState)->weight) {
+                freeState(*bestState);
                 *bestState = copyState(n, state);
             }
         }
         return;
     }
 
-    // Branch where vertex at depth is assigned to subset X
-    state.partition[state.depth] = 0;
-    int newWeightX = state.weight + getWeightChange(state.partition, state.depth, graph);
-    State newStateX = newState(n, state.partition, state.depth + 1, state.cX + 1, state.cY, newWeightX);
-    
-    if (newStateX.cX <= n - a) { // Ensure there is still room in subset X
-        if (newWeightX < bestState->weight) { // Prune if current weight is worse than best weight
-            int lowerBound = newWeightX + computeLowerBound(newStateX.depth, n, newStateX.partition, graph);
-            if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
-                if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState, recCalls) if(state.depth < PARALLEL_THRESHOLD)
-                    {
-                        bb_dfs(n, a, graph, newStateX, bestState, recCalls);
-                        freeState(newStateX);
-                    }
-                } 
-                else {
+    int idx = state->depth;
+    int saved = state->partition[idx];
+
+    state->partition[idx] = 0;
+    int newWeightX = state->weight + getWeightChange(state->partition, idx, graph);
+    if (state->cX + 1 <= n - a && newWeightX < (*bestState)->weight) {
+        State *newStateX = newState(n, state->partition, idx + 1, state->cX + 1, state->cY, newWeightX);
+        int lowerBound = newWeightX + computeLowerBound(newStateX->depth, n, newStateX->partition, graph);
+        if (lowerBound < (*bestState)->weight) {
+            if (state->depth < PARALLEL_THRESHOLD) {
+                #pragma omp task shared(bestState, recCalls)
+                {
                     bb_dfs(n, a, graph, newStateX, bestState, recCalls);
                     freeState(newStateX);
                 }
+            } else {
+                bb_dfs(n, a, graph, newStateX, bestState, recCalls);
+                freeState(newStateX);
             }
+        } else {
+            freeState(newStateX);
         }
     }
 
-    // Branch where vertex idx is assigned to subset Y
-    state.partition[state.depth] = 1;
-    int newWeightY = state.weight + getWeightChange(state.partition, state.depth, graph);
-    State newStateY = newState(n, state.partition, state.depth + 1, state.cX, state.cY + 1, newWeightY);
-
-    if (newStateY.cY <= a) { // Ensure there is still room in subset Y
-        if (newWeightY < bestState->weight) { // Prune if current weight is worse than best weight
-            int lowerBound = newWeightY + computeLowerBound(newStateY.depth, n, newStateY.partition, graph);
-            if (lowerBound < bestState->weight) { // Prune if lower bound is worse than best weight
-                if (state.depth < PARALLEL_THRESHOLD) {
-                    #pragma omp task shared(bestState, recCalls) if(state.depth < PARALLEL_THRESHOLD)
-                    {
-                        bb_dfs(n, a, graph, newStateY, bestState, recCalls);
-                        freeState(newStateY);
-                    }
-                } 
-                else {
+    state->partition[idx] = 1;
+    int newWeightY = state->weight + getWeightChange(state->partition, idx, graph);
+    if (state->cY + 1 <= a && newWeightY < (*bestState)->weight) {
+        State *newStateY = newState(n, state->partition, idx + 1, state->cX, state->cY + 1, newWeightY);
+        int lowerBound = newWeightY + computeLowerBound(newStateY->depth, n, newStateY->partition, graph);
+        if (lowerBound < (*bestState)->weight) {
+            if (state->depth < PARALLEL_THRESHOLD) {
+                #pragma omp task shared(bestState, recCalls)
+                {
                     bb_dfs(n, a, graph, newStateY, bestState, recCalls);
                     freeState(newStateY);
                 }
+            } else {
+                bb_dfs(n, a, graph, newStateY, bestState, recCalls);
+                freeState(newStateY);
             }
+        } else {
+            freeState(newStateY);
         }
     }
+
+    state->partition[idx] = saved;
+
     #pragma omp taskwait
 }
 
-// Function for finding the minimum cut of a graph
 Solution findMinimumCut(Instance *instance, int numThreads) {
     int n = instance->n;
     int a = instance->a;
     int **graph = instance->graph;
 
-    State state = initialState(n); // Initialize the first state
-    State bestState = initialBestState(n); // Initialize the best state
+    State *state = initialState(n);
+    State *bestState = initialBestState(n);
 
     int recCalls = 0;
-    double start_time = omp_get_wtime(); // Start timing execution
-    
+    double start_time = omp_get_wtime();
+
     #pragma omp parallel num_threads(numThreads)
     {
         #pragma omp single
@@ -132,19 +126,20 @@ Solution findMinimumCut(Instance *instance, int numThreads) {
 
     freeState(state);
 
-    double end_time = omp_get_wtime(); // End timing execution
-    double time_taken = end_time - start_time; // Calculate time taken
+    double end_time = omp_get_wtime();
+    double time_taken = end_time - start_time;
 
     Solution solution;
-    solution.partition = bestState.partition;
-    solution.minWeight = bestState.weight;
+    solution.partition = bestState->partition;
+    solution.minWeight = bestState->weight;
     solution.recCalls = recCalls;
     solution.time = time_taken;
+
+    free(bestState); // partition is owned by solution now
 
     return solution;
 }
 
-// Print the computed solution
 void printSolution(Solution solution, int n) {
     printf("**************************************************\n");
     printf("Minimum cut: %d\n", solution.minWeight);
